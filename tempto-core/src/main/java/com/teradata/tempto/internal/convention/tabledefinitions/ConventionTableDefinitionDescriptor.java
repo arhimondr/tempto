@@ -15,6 +15,7 @@
 package com.teradata.tempto.internal.convention.tabledefinitions;
 
 import com.teradata.tempto.internal.convention.AnnotatedFileParser;
+import com.teradata.tempto.internal.convention.AnnotatedFileParser.SectionParsingResult;
 import com.teradata.tempto.internal.convention.SqlDescriptor;
 
 import java.nio.file.Path;
@@ -32,8 +33,6 @@ import static java.nio.file.Files.isRegularFile;
 class ConventionTableDefinitionDescriptor
 {
 
-    private static final TableType DEFAULT_TABLE_TYPE = HIVE;
-
     public static class ParsedDDLFile
             extends SqlDescriptor
     {
@@ -41,12 +40,12 @@ class ConventionTableDefinitionDescriptor
 
         public static ParsedDDLFile forPath(Path dataFile)
         {
-            List<AnnotatedFileParser.SectionParsingResult> sectionParsingResults = new AnnotatedFileParser().parseFile(dataFile);
-            AnnotatedFileParser.SectionParsingResult onlySection = getOnlyElement(sectionParsingResults);
+            List<SectionParsingResult> sectionParsingResults = new AnnotatedFileParser().parseFile(dataFile);
+            SectionParsingResult onlySection = getOnlyElement(sectionParsingResults);
             return new ParsedDDLFile(onlySection);
         }
 
-        private ParsedDDLFile(AnnotatedFileParser.SectionParsingResult sqlSectionParsingResult)
+        private ParsedDDLFile(SectionParsingResult sqlSectionParsingResult)
         {
             super(sqlSectionParsingResult);
             tableType = getTableTypeFromProperties();
@@ -54,13 +53,8 @@ class ConventionTableDefinitionDescriptor
 
         private TableType getTableTypeFromProperties()
         {
-            Optional<String> tableTypeProperty = getPropertyValue("type");
-            if (!tableTypeProperty.isPresent()) {
-                return DEFAULT_TABLE_TYPE;
-            }
-            else {
-                return TableType.valueOf(tableTypeProperty.get().toUpperCase());
-            }
+            String tableTypeProperty = getPropertyValue("type").orElseThrow(() -> new IllegalArgumentException("missing 'type' property"));
+            return TableType.valueOf(tableTypeProperty.toUpperCase());
         }
 
         public TableType getTableType()
